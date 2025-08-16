@@ -33,6 +33,17 @@ target_include_directories(ByteHunter PRIVATE
     ${IDA_SDK_PATH}/${IDA_VERSION}/include
 )
 
+# Compiler definitions
+target_compile_definitions(ByteHunter PRIVATE
+    __NT__
+    __IDP__
+)
+
+# 64-bit definitions
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    target_compile_definitions(ByteHunter PRIVATE __EA64__)
+endif()
+
 # Compiler flags
 target_compile_options(ByteHunter PRIVATE 
     $<$<COMPILE_LANGUAGE:C>:-std=c11>
@@ -49,22 +60,70 @@ check_cxx_compiler_flag(-mavx2 COMPILER_SUPPORTS_AVX2)
 if(COMPILER_SUPPORTS_AVX2)
     target_compile_options(ByteHunter PRIVATE -mavx2)
     target_compile_definitions(ByteHunter PRIVATE __AVX2__)
+    message(STATUS "AVX2 SIMD acceleration enabled")
 endif()
 
 # Platform-specific settings
 if(WIN32)
-    set_target_properties(ByteHunter PROPERTIES SUFFIX ".dll")
-    target_link_libraries(ByteHunter ${IDA_SDK_PATH}/${IDA_VERSION}/lib/x64_win_vc_64/ida.lib)
+    set_target_properties(ByteHunter PROPERTIES 
+        SUFFIX ".dll"
+        RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/Release"
+        RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/Debug"
+    )
+    
+    # Link with IDA libraries
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        target_link_libraries(ByteHunter ${IDA_SDK_PATH}/${IDA_VERSION}/lib/x64_win_vc_64/ida.lib)
+    else()
+        target_link_libraries(ByteHunter ${IDA_SDK_PATH}/${IDA_VERSION}/lib/x64_win_vc_32/ida.lib)
+    endif()
+    
+    # Windows-specific compile options
+    target_compile_options(ByteHunter PRIVATE /wd4996)  # Disable deprecated warnings
+    
 elseif(APPLE)
-    set_target_properties(ByteHunter PROPERTIES SUFFIX ".dylib")
+    set_target_properties(ByteHunter PROPERTIES 
+        SUFFIX ".dylib"
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
+    
     target_link_libraries(ByteHunter ${IDA_SDK_PATH}/${IDA_VERSION}/lib/x64_mac_clang_64/ida.dylib)
-else()
-    set_target_properties(ByteHunter PROPERTIES SUFFIX ".so")
+    target_link_libraries(ByteHunter "-framework ApplicationServices")
+    
+else() # Linux
+    set_target_properties(ByteHunter PROPERTIES 
+        SUFFIX ".so"
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
+    
     target_link_libraries(ByteHunter ${IDA_SDK_PATH}/${IDA_VERSION}/lib/x64_linux_gcc_64/ida.so)
 endif()
 
 # Plugin naming
 set_target_properties(ByteHunter PROPERTIES PREFIX "")
+
+# Custom build targets
+add_custom_target(install_plugin
+    COMMAND ${CMAKE_COMMAND} -E copy 
+        $<TARGET_FILE:ByteHunter>
+        $ENV{HOME}/.idapro/plugins/
+    DEPENDS ByteHunter
+    COMMENT "Installing ByteHunter plugin to IDA Pro plugins directory"
+)
+
+# Debug configuration
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_definitions(ByteHunter PRIVATE DEBUG)
+    target_compile_options(ByteHunter PRIVATE -g)
+endif()
+
+# Print build information
+message(STATUS "ByteHunter Configuration:")
+message(STATUS "  IDA SDK Path: ${IDA_SDK_PATH}/${IDA_VERSION}")
+message(STATUS "  Target Architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+message(STATUS "  Build Type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "  C Compiler: ${CMAKE_C_COMPILER}")
+message(STATUS "  CXX Compiler: ${CMAKE_CXX_COMPILER}")
 
 # Install target
 install(TARGETS ByteHunter 
