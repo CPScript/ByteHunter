@@ -1,4 +1,20 @@
-#include "../include/bytehunter.h"
+#include "../../include/bytehunter.h"
+
+// Detect current processor architecture
+arch_type_t detect_architecture(void) {
+    switch (get_ph()->id) {
+        case PLFM_386:
+            return ARCH_X86;
+        case PLFM_ARM:
+            return ARCH_ARM;
+        case PLFM_PPC:
+            return ARCH_PPC;
+        case PLFM_MIPS:
+            return ARCH_MIPS;
+        default:
+            return ARCH_UNKNOWN;
+    }
+}
 
 // Initialize processor-specific settings
 void processor_init(void) {
@@ -27,22 +43,6 @@ void processor_init(void) {
                 BIT(o_mem) | BIT(o_phrase) | BIT(o_displ) | BIT(o_far) | 
                 BIT(o_near) | BIT(o_imm);
             break;
-    }
-}
-
-// Detect current processor architecture
-static arch_type_t detect_architecture(void) {
-    switch (get_ph()->id) {
-        case PLFM_386:
-            return ARCH_X86;
-        case PLFM_ARM:
-            return ARCH_ARM;
-        case PLFM_PPC:
-            return ARCH_PPC;
-        case PLFM_MIPS:
-            return ARCH_MIPS;
-        default:
-            return ARCH_UNKNOWN;
     }
 }
 
