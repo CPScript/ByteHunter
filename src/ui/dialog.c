@@ -1,4 +1,4 @@
-#include "../include/bytehunter.h"
+#include "../../include/bytehunter.h"
 
 // Main plugin dialog
 bool show_main_dialog(void) {
@@ -46,7 +46,7 @@ bool show_main_dialog(void) {
 }
 
 // Configure operand type wildcarding
-static void configure_operand_types(void) {
+void configure_operand_types(void) {
     const char format[] =
         "STARTITEM 0\n"
         "Operand Type Configuration\n"
@@ -75,7 +75,7 @@ static void configure_operand_types(void) {
 }
 
 // Configure advanced settings
-static void configure_settings(void) {
+void configure_settings(void) {
     const char format[] =
         "STARTITEM 0\n"
         "Settings\n\n"
@@ -96,7 +96,7 @@ static void configure_settings(void) {
 }
 
 // Execute selected action
-static bool execute_action(int action, signature_format_t format) {
+bool execute_action(int action, signature_format_t format) {
     switch (action) {
         case 0: // Unique signature
             return generate_and_display_signature(get_screen_ea(), format);
