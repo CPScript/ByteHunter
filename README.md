@@ -37,20 +37,6 @@ ByteHunter is a IDA Pro plugin that changes binary signature generation and patt
 - **C/C++ Compiler**: GCC, Clang, or MSVC
 - **CMake 3.12+** or Make
 
-### Quick Install
-
-1. **Download the latest release** from the [releases page](../../releases)
-2. **Extract to IDA plugins directory**:
-   ```bash
-   # Windows
-   %APPDATA%\Hex-Rays\IDA Pro\plugins\
-   
-   # Linux/macOS
-   ~/.idapro/plugins/
-   ```
-3. **Restart IDA Pro**
-4. **Access via hotkey**: `Ctrl+Alt+B`
-
 ### Building from Source
 
 #### Using CMake (Recommended)
@@ -196,7 +182,3 @@ E8 ?? ?? ?? ?? 48 89 C3 48 85 C0 74 1A
 - C-style byte array
 - String mask (`x` = match, `?` = wildcard)
 - Perfect for custom tools
-
-### Hex Bytes + Bitmask
-```
-0xE8, 0x00, 0x00, 0x00, 0x00, 0x
