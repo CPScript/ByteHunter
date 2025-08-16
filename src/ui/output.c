@@ -1,4 +1,5 @@
-#include "../include/bytehunter.h"
+#include "../../include/bytehunter.h"
+#include <stdio.h>
 
 // Display signature generation results
 bool generate_and_display_signature(ea_t address, signature_format_t format) {
@@ -151,7 +152,7 @@ bool show_pattern_search_dialog(void) {
 }
 
 // Format signature strings for different output types
-static void format_ida_style(const signature_t *sig, char *buffer, size_t buffer_size) {
+void format_ida_style(const signature_t *sig, char *buffer, size_t buffer_size) {
     size_t pos = 0;
     for (size_t i = 0; i < sig->count && pos < buffer_size - 3; i++) {
         if (sig->bytes[i].is_wildcard) {
@@ -164,7 +165,7 @@ static void format_ida_style(const signature_t *sig, char *buffer, size_t buffer
     buffer[pos] = '\0';
 }
 
-static void format_x64dbg_style(const signature_t *sig, char *buffer, size_t buffer_size) {
+void format_x64dbg_style(const signature_t *sig, char *buffer, size_t buffer_size) {
     size_t pos = 0;
     for (size_t i = 0; i < sig->count && pos < buffer_size - 4; i++) {
         if (sig->bytes[i].is_wildcard) {
@@ -178,7 +179,7 @@ static void format_x64dbg_style(const signature_t *sig, char *buffer, size_t buf
     buffer[pos] = '\0';
 }
 
-static void format_c_array_style(const signature_t *sig, char *buffer, size_t buffer_size) {
+void format_c_array_style(const signature_t *sig, char *buffer, size_t buffer_size) {
     size_t pos = 0;
     
     // Generate byte array
@@ -195,7 +196,7 @@ static void format_c_array_style(const signature_t *sig, char *buffer, size_t bu
     buffer[pos] = '\0';
 }
 
-static void format_hex_bytes_style(const signature_t *sig, char *buffer, size_t buffer_size) {
+void format_hex_bytes_style(const signature_t *sig, char *buffer, size_t buffer_size) {
     size_t pos = 0;
     
     // Generate hex bytes
