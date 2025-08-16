@@ -15,7 +15,7 @@
 
 // Plugin metadata
 #define BH_PLUGIN_NAME    "ByteHunter"
-#define BH_PLUGIN_VERSION "1.0.2"
+#define BH_PLUGIN_VERSION "1.0.3"
 #define BH_PLUGIN_AUTHOR  "CPScript"
 #define BH_PLUGIN_HOTKEY  "Ctrl-Alt-B"
 
