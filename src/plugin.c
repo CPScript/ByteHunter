@@ -1,4 +1,7 @@
 #include "../include/bytehunter.h"
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 
 // Global configuration
 config_t g_config = {
@@ -71,11 +74,8 @@ bool bytehunter_run(size_t arg) {
     return show_main_dialog();
 }
 
-//==============================================================================
-// Additional format parsing
-
 // Parse IDA-style signatures "E8 ? ? ? ?"
-static bool parse_ida_format(const char *input, signature_t *sig) {
+bool parse_ida_format(const char *input, signature_t *sig) {
     if (!input || !sig) return false;
     
     const char *pos = input;
@@ -103,7 +103,7 @@ static bool parse_ida_format(const char *input, signature_t *sig) {
 }
 
 // Parse x64Dbg-style signatures "E8 ?? ?? ?? ??"
-static bool parse_x64dbg_format(const char *input, signature_t *sig) {
+bool parse_x64dbg_format(const char *input, signature_t *sig) {
     if (!input || !sig) return false;
     
     const char *pos = input;
@@ -131,30 +131,39 @@ static bool parse_x64dbg_format(const char *input, signature_t *sig) {
 }
 
 // Parse C array format "\xE8\x00\x00\x00\x00" with mask "x????x"
-static bool parse_c_array_format(const char *input, signature_t *sig) {
+bool parse_c_array_format(const char *input, signature_t *sig) {
     if (!input || !sig) return false;
     
     // Extract hex bytes
     const char *hex_pos = strstr(input, "\\x");
     if (!hex_pos) return false;
     
-    std::vector<uint8_t> bytes;
+    // Use dynamic array instead of std::vector
+    uint8_t *bytes = NULL;
+    size_t bytes_count = 0;
+    size_t bytes_capacity = 0;
+    
     while (hex_pos && *hex_pos) {
         hex_pos += 2; // Skip "\x"
         if (isxdigit(*hex_pos) && isxdigit(*(hex_pos + 1))) {
+            // Resize array if needed
+            if (bytes_count >= bytes_capacity) {
+                bytes_capacity = bytes_capacity ? bytes_capacity * 2 : 16;
+                uint8_t *new_bytes = (uint8_t*)bh_realloc(bytes, bytes_capacity);
+                if (!new_bytes) {
+                    bh_free(bytes);
+                    return false;
+                }
+                bytes = new_bytes;
+            }
+            
             char hex_str[3] = {*hex_pos, *(hex_pos + 1), 0};
-            bytes.push_back((uint8_t)strtol(hex_str, NULL, 16));
+            bytes[bytes_count++] = (uint8_t)strtol(hex_str, NULL, 16);
             hex_pos += 2;
             hex_pos = strstr(hex_pos, "\\x");
         } else {
             break;
         }
-    }
-    
-    // Extract mask
-    const char *mask_pos = input;
-    while (*mask_pos && (*mask_pos == 'x' || *mask_pos == '?')) {
-        mask_pos++;
     }
     
     // Find mask pattern
@@ -167,46 +176,74 @@ static bool parse_c_array_format(const char *input, signature_t *sig) {
         }
     }
     
-    if (!mask_start || bytes.empty()) return false;
-    
-    // Apply mask to bytes
-    for (size_t i = 0; i < bytes.size() && mask_start[i]; i++) {
-        bool is_wildcard = (mask_start[i] == '?');
-        if (!sig_add_byte(sig, bytes[i], is_wildcard)) return false;
+    if (!mask_start || bytes_count == 0) {
+        bh_free(bytes);
+        return false;
     }
     
+    // Apply mask to bytes
+    for (size_t i = 0; i < bytes_count && mask_start[i]; i++) {
+        bool is_wildcard = (mask_start[i] == '?');
+        if (!sig_add_byte(sig, bytes[i], is_wildcard)) {
+            bh_free(bytes);
+            return false;
+        }
+    }
+    
+    bh_free(bytes);
     return sig->count > 0;
 }
 
 // Parse hex bytes format "0xE8, 0x00, 0x00" with bitmask "0b11100"
-static bool parse_hex_bytes_format(const char *input, signature_t *sig) {
+bool parse_hex_bytes_format(const char *input, signature_t *sig) {
     if (!input || !sig) return false;
     
-    // Extract hex bytes
-    std::vector<uint8_t> bytes;
+    // Extract hex bytes using dynamic array
+    uint8_t *bytes = NULL;
+    size_t bytes_count = 0;
+    size_t bytes_capacity = 0;
+    
     const char *pos = input;
     while ((pos = strstr(pos, "0x")) != NULL) {
         pos += 2;
         if (isxdigit(*pos) && isxdigit(*(pos + 1))) {
+            // Resize array if needed
+            if (bytes_count >= bytes_capacity) {
+                bytes_capacity = bytes_capacity ? bytes_capacity * 2 : 16;
+                uint8_t *new_bytes = (uint8_t*)bh_realloc(bytes, bytes_capacity);
+                if (!new_bytes) {
+                    bh_free(bytes);
+                    return false;
+                }
+                bytes = new_bytes;
+            }
+            
             char hex_str[3] = {*pos, *(pos + 1), 0};
-            bytes.push_back((uint8_t)strtol(hex_str, NULL, 16));
+            bytes[bytes_count++] = (uint8_t)strtol(hex_str, NULL, 16);
             pos += 2;
         }
     }
     
     // Extract bitmask
     const char *mask_pos = strstr(input, "0b");
-    if (!mask_pos || bytes.empty()) return false;
+    if (!mask_pos || bytes_count == 0) {
+        bh_free(bytes);
+        return false;
+    }
     
     mask_pos += 2;
     size_t mask_len = strspn(mask_pos, "01");
     
     // Apply bitmask (note: bitmask is typically reversed)
-    for (size_t i = 0; i < bytes.size() && i < mask_len; i++) {
+    for (size_t i = 0; i < bytes_count && i < mask_len; i++) {
         size_t mask_idx = mask_len - 1 - i; // Reverse bit order
         bool is_wildcard = (mask_pos[mask_idx] == '0');
-        if (!sig_add_byte(sig, bytes[i], is_wildcard)) return false;
+        if (!sig_add_byte(sig, bytes[i], is_wildcard)) {
+            bh_free(bytes);
+            return false;
+        }
     }
     
+    bh_free(bytes);
     return sig->count > 0;
 }
