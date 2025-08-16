@@ -1,4 +1,4 @@
-#include "../include/bytehunter.h"
+#include "../../include/bytehunter.h"
 #include <stdlib.h>
 
 // Safe memory allocation with error handling
