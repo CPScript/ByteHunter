@@ -6,7 +6,7 @@
 ![Platform](https://img.shields.io/badge/platform-Windows%20|%20Linux%20|%20macOS-lightgrey)
 ![IDA Support](https://img.shields.io/badge/IDA%20Pro-8%20|%209-green)
 
-*Professional-grade reverse engineering tool for malware analysis, vulnerability research, and binary analysis*
+*Reverse engineering tool for malware analysis, vulnerability research, and binary analysis*
 
 </div>
 
