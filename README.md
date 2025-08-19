@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![ByteHunter Logo](https://img.shields.io/badge/ByteHunter-v2.0.0-blue.svg)
+![ByteHunter Logo](https://img.shields.io/badge/ByteHunter-v1.0.0-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows%20|%20Linux%20|%20macOS-lightgrey)
 ![IDA Support](https://img.shields.io/badge/IDA%20Pro-8%20|%209-green)
 
